@@ -1,0 +1,71 @@
+//////////////////***************PLANTA DOSIFICADORA***************//////////////////
+#include "BluetoothSerial.h" // LIBRERIA DE CONEXION ESP32 POR BLUETOOTH
+#include <DHT.h> // LIBRERIA SENSOR DE HUMEDAD DHT22
+
+#define sensor 34 //PIN PARA SENSOR DE HUMEDAD SUELO 
+int valor = 0;    // VALOR INICIAL CERO POR SER VARIABLE ANALOGA
+int Bomba = 2;      // PIN 2 PARA ACCIONAMIENTO DE MOTOBOMBA
+#define DHTTYPE DHT22
+const int DHTPin = 5; // PIN 5 PARA SENSOR DE HUMEDAD Y TEMPERATURA AMBIENTE
+DHT dht(DHTPin, DHTTYPE);
+BluetoothSerial SerialBT; 
+
+void setup() //confuguracion inicial
+{
+Serial.begin(9600); //RESOLUCION DE BAUDIOS PARA TRANSMISION DE DATOS
+SerialBT.begin("PLANTA DOSIFICADORA"); //MENSAJE EN MONITOR SERIAL COMPUTADOR
+Serial.println("!LECTURA DE SENSORES SUELO - AMBIENTE!"); //MENSAJE EN MONITOR SERIAL COMPUTADOR
+dht.begin(); //INICIALIZACION DE SENSOR DE AMBIENTE
+pinMode(Bomba, OUTPUT); //PIN COMO SALIDA PARA MOTOBOMBA
+}
+
+
+//////////////////***************CODIGO REPETITIVO***************//////////////////
+void loop() 
+
+{
+delay(1000); //TIEMPO DE ESPERA PARA TOMAR NUEVAMENTE MUESTRA EN MILISEGUNDOS
+float h = dht.readHumidity(); //VARIABLE FLOTATNE DE HUMEDAD
+float t = dht.readTemperature(); //VARIABLE FLOTATNE DE TEMPERATURA
+   if (isnan(h) || isnan(t)) //CONDICION EN CASO DE NO FUNCIONAR SENSADO DE HUMEDAD Y TEMPERATURA
+   {
+      Serial.println("No se pudo leer el sensor DHT!"); //MENSAJE DE ERROR POR SI NO HAY CONEXION DE SENSOR DHT22
+      return;
+   }
+
+ int valor = map(analogRead(sensor), 0, 4096, 100, 0); //LECTURA DE VARIRABLE ANALOGICA DE SENSOR DE HUMEDAD EN CONVERSION DE BITS
+    Serial.print("Humedad Suelo: "); //IMPIRMIR EN PANTALLA SERIAL
+    Serial.print(valor); //MOSTRAR VALOR DE HUMEDAD EN MONITOR SERIAL
+    Serial.print("% "); // IMPIRMIR VALOR EN PORCENTAJE MONITOR SERIAL 
+ 
+     
+Serial.print("Humedad Ambiente: ");  //MONITOR SERIAL EN IDE ARDUINO POR COMPUTADORA
+Serial.print(h); //MONITOR SERIAL EN IDE ARDUINO POR COMPUTADORA
+Serial.print(" %\t"); //MONITOR SERIAL EN IDE ARDUINO POR COMPUTADORA
+Serial.print("Temperatura Ambiente: "); //MONITOR SERIAL EN IDE ARDUINO POR COMPUTADORA
+Serial.print(t); //MONITOR SERIAL EN IDE ARDUINO POR COMPUTADORA
+Serial.println(" *C "); //MONITOR SERIAL EN IDE ARDUINO POR COMPUTADORA
+
+SerialBT.print ("H. Ambiente "); //MOSTRAR DATOS EN DISPOSITIVO MOVIL
+SerialBT.print (h); //MOSTRAR DATOS EN DISPOSITIVO MOVIL
+SerialBT.println ("%"); //MOSTRAR DATOS EN DISPOSITIVO MOVIL
+SerialBT.print ("T. Ambiente "); //MOSTRAR DATOS EN DISPOSITIVO MOVIL
+SerialBT.print (t); //MOSTRAR DATOS EN DISPOSITIVO MOVIL
+SerialBT.println ("°C"); //MOSTRAR DATOS EN DISPOSITIVO MOVIL
+SerialBT.print ("H. Suelo "); //MOSTRAR DATOS EN DISPOSITIVO MOVIL
+SerialBT.print (valor); //MOSTRAR DATOS EN DISPOSITIVO MOVIL
+SerialBT.println ("%"); //MOSTRAR DATOS EN DISPOSITIVO MOVIL
+
+
+if (SerialBT.available()) {
+    char Mensaje = SerialBT.read(); //LEER POR MONITOR SERIAL LOS DATOS ENVIADOS POR BLUETOOTH
+    if (Mensaje == 'A') {        //ENVIAR POR TECLADO LA LETRA PARA ACTIVAR MOTOBOMBA
+      digitalWrite(Bomba, HIGH); //ACTIVAR MOTOBOMBA
+    }
+    else if (Mensaje == 'B') {  //ENVIAR POR TECLADO LA LETRA PARA DESACTIVAR MOTOBOMBA
+      digitalWrite(Bomba, LOW); //DESACTIVAR MOTOBOMBA
+    }
+  }
+
+}
+//////////////////***************CODIGO REPETITIVO***************//////////////////
